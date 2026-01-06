@@ -72,7 +72,7 @@ API documentation at `http://localhost:8080/docs`
 3. Start rpi-hub-service:
    ```bash
    cd ../rpi-hub-service
-   uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+   uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload
    ```
 
 ## Mock Users

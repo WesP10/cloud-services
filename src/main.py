@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import get_settings
 from .api import auth, hubs
 from .websocket.hub_endpoint import handle_hub_connection
+from .websocket.client_endpoint import handle_client_connection
 
 # Configure logging
 logging.basicConfig(
@@ -25,6 +26,7 @@ app = FastAPI(
 
 # Configure CORS
 settings = get_settings()
+logger.info(f"CORS origins configured: {settings.cors_origins}")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -62,6 +64,17 @@ async def hub_websocket_endpoint(websocket: WebSocket):
     Hubs connect here with device token authentication.
     """
     await handle_hub_connection(websocket)
+
+
+@app.websocket("/ws/client")
+async def client_websocket_endpoint(websocket: WebSocket, token: str):
+    """
+    WebSocket endpoint for client (browser) connections.
+    
+    Clients connect here with JWT token authentication.
+    Supports subscription-based telemetry streaming.
+    """
+    await handle_client_connection(websocket, token)
 
 
 if __name__ == "__main__":

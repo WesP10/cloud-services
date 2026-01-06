@@ -33,14 +33,17 @@ class Settings(BaseSettings):
     device_token_rpi_bridge_02: str = "dev-token-rpi-bridge-02"
 
     # CORS - can be string or list
-    cors_origins: Union[str, List[str]] = "http://localhost:3000,http://localhost:8000"
+    cors_origins: Union[str, List[str]] = "http://localhost:3000,http://localhost:5173,http://localhost:8080"
 
     @field_validator('cors_origins', mode='after')
     @classmethod
     def parse_cors_origins(cls, v):
         """Parse CORS origins from comma-separated string to list."""
         if isinstance(v, str):
-            return [origin.strip() for origin in v.split(',')]
+            result = [origin.strip() for origin in v.split(',')]
+            logger.info(f"Parsed CORS origins from string: {result}")
+            return result
+        logger.info(f"Using CORS origins list: {v}")
         return v
 
     def get_valid_device_tokens(self) -> dict[str, str]:

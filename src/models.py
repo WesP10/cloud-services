@@ -174,3 +174,49 @@ class TelemetryListResponse(BaseModel):
     telemetry: List[TelemetryEntry]
     count: int
     totalBytes: int
+
+
+class PortInfo(BaseModel):
+    """Port information."""
+    port_id: str
+    port: str
+    description: Optional[str] = None
+    manufacturer: Optional[str] = None
+    serial_number: Optional[str] = None
+    vendor_id: Optional[str] = None
+    product_id: Optional[str] = None
+
+
+class PortListResponse(BaseModel):
+    """List of ports."""
+    hubId: str
+    ports: List[PortInfo]
+    count: int
+
+
+class ConnectionInfo(BaseModel):
+    """Connection information."""
+    port_id: str
+    status: str
+    baud_rate: int
+    session_id: str
+    bytes_read: int
+    bytes_written: int
+    connected_at: Optional[datetime] = None
+
+
+class ConnectionListResponse(BaseModel):
+    """List of connections."""
+    hubId: str
+    connections: List[ConnectionInfo]
+    count: int
+
+
+class TaskStatusResponse(BaseModel):
+    """Task status response."""
+    task_id: str
+    status: str
+    progress: Optional[int] = None
+    result: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+    timestamp: datetime

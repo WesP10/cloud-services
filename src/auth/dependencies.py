@@ -30,3 +30,25 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
         )
 
     return user
+
+
+async def get_current_user_ws(token: str) -> str:
+    """
+    Get current authenticated user from JWT token for WebSocket connections.
+    
+    Returns username on success, None on failure.
+    """
+    try:
+        payload = decode_access_token(token)
+        username: str = payload.get("sub")
+        
+        if username is None:
+            return None
+        
+        user = get_user(username)
+        if user is None:
+            return None
+        
+        return username
+    except Exception:
+        return None

@@ -47,6 +47,30 @@ class DeviceEvent:
 
 
 @dataclass
+class PortData:
+    """Port data."""
+    port_id: str
+    port: str
+    description: Optional[str] = None
+    manufacturer: Optional[str] = None
+    serial_number: Optional[str] = None
+    vendor_id: Optional[str] = None
+    product_id: Optional[str] = None
+
+
+@dataclass
+class ConnectionData:
+    """Connection data."""
+    port_id: str
+    status: str
+    baud_rate: int
+    session_id: str
+    bytes_read: int
+    bytes_written: int
+    connected_at: Optional[datetime] = None
+
+
+@dataclass
 class TaskStatus:
     """Task status data."""
     timestamp: datetime
@@ -80,6 +104,12 @@ class MemoryStore:
 
         # Device events (hub_id -> list of events)
         self._device_events: Dict[str, List[DeviceEvent]] = defaultdict(list)
+
+        # Ports data (hub_id -> port_id -> PortData)
+        self._ports: Dict[str, Dict[str, PortData]] = defaultdict(dict)
+
+        # Connections data (hub_id -> port_id -> ConnectionData)
+        self._connections: Dict[str, Dict[str, ConnectionData]] = defaultdict(dict)
 
         # Task status (hub_id -> task_id -> status)
         self._task_status: Dict[str, Dict[str, TaskStatus]] = defaultdict(dict)
@@ -212,6 +242,19 @@ class MemoryStore:
                 device_info=device_info,
             )
             self._device_events[hub_id].append(event)
+            
+            # Update ports cache when device connects
+            if event_type == "connected" and device_info:
+                port_data = PortData(
+                    port_id=port_id,
+                    port=device_info.get("port", ""),
+                    description=device_info.get("description"),
+                    manufacturer=device_info.get("manufacturer"),
+                    serial_number=device_info.get("serial_number"),
+                    vendor_id=device_info.get("vendor_id"),
+                    product_id=device_info.get("product_id"),
+                )
+                self._ports[hub_id][port_id] = port_data
 
     async def get_device_events(
         self, hub_id: str, limit: Optional[int] = None
@@ -222,6 +265,56 @@ class MemoryStore:
             if limit:
                 return events[-limit:]
             return events.copy()
+
+    # Ports Management
+    async def get_ports(self, hub_id: str) -> List[PortData]:
+        """Get all ports for hub."""
+        async with self._lock:
+            return list(self._ports.get(hub_id, {}).values())
+
+    async def get_port(self, hub_id: str, port_id: str) -> Optional[PortData]:
+        """Get specific port."""
+        async with self._lock:
+            return self._ports.get(hub_id, {}).get(port_id)
+
+    # Connections Management
+    async def update_connection(
+        self,
+        hub_id: str,
+        port_id: str,
+        status: str,
+        baud_rate: int,
+        session_id: str,
+        bytes_read: int = 0,
+        bytes_written: int = 0,
+        connected_at: Optional[datetime] = None,
+    ) -> None:
+        """Update connection data."""
+        async with self._lock:
+            self._connections[hub_id][port_id] = ConnectionData(
+                port_id=port_id,
+                status=status,
+                baud_rate=baud_rate,
+                session_id=session_id,
+                bytes_read=bytes_read,
+                bytes_written=bytes_written,
+                connected_at=connected_at or datetime.utcnow(),
+            )
+
+    async def remove_connection(self, hub_id: str, port_id: str) -> None:
+        """Remove connection data."""
+        async with self._lock:
+            self._connections.get(hub_id, {}).pop(port_id, None)
+
+    async def get_connections(self, hub_id: str) -> List[ConnectionData]:
+        """Get all connections for hub."""
+        async with self._lock:
+            return list(self._connections.get(hub_id, {}).values())
+
+    async def get_connection(self, hub_id: str, port_id: str) -> Optional[ConnectionData]:
+        """Get specific connection."""
+        async with self._lock:
+            return self._connections.get(hub_id, {}).get(port_id)
 
     # Task Status
     async def update_task_status(

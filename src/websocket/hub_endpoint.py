@@ -143,6 +143,8 @@ async def route_hub_message(hub_id: str, message: dict):
 
 async def handle_telemetry(hub_id: str, message: dict):
     """Handle telemetry message."""
+    from .client_endpoint import get_client_manager
+    
     telemetry = TelemetryMessage(**message)
     store = get_store()
 
@@ -159,10 +161,26 @@ async def handle_telemetry(hub_id: str, message: dict):
     )
 
     logger.debug(f"Telemetry from {hub_id}: {len(data_bytes)} bytes")
+    
+    # Broadcast to subscribed clients
+    client_message = {
+        "type": "telemetry_stream",
+        "hubId": hub_id,
+        "portId": telemetry.portId,
+        "sessionId": telemetry.sessionId,
+        "timestamp": telemetry.timestamp,
+        "data": telemetry.data,
+        "dataSizeBytes": len(data_bytes),
+    }
+    
+    client_manager = get_client_manager()
+    await client_manager.broadcast_telemetry(hub_id, telemetry.portId, client_message)
 
 
 async def handle_health(hub_id: str, message: dict):
     """Handle health message."""
+    from .client_endpoint import get_client_manager
+    
     health = HealthMessage(**message)
     store = get_store()
 
@@ -178,10 +196,25 @@ async def handle_health(hub_id: str, message: dict):
         f"Health from {hub_id}: uptime={health.uptime_seconds}s, "
         f"cpu={health.system.get('cpu', {}).get('percent')}%"
     )
+    
+    # Broadcast to all clients (not subscription-filtered)
+    client_message = {
+        "type": "health",
+        "hubId": hub_id,
+        "timestamp": health.timestamp,
+        "cpu_percent": health.system.get('cpu', {}).get('percent'),
+        "memory_percent": health.system.get('memory', {}).get('percent'),
+        "disk_percent": health.system.get('disk', {}).get('percent'),
+    }
+    
+    client_manager = get_client_manager()
+    await client_manager.broadcast_health(hub_id, client_message)
 
 
 async def handle_device_event(hub_id: str, message: dict):
     """Handle device event message."""
+    from .client_endpoint import get_client_manager
+    
     event = DeviceEventMessage(**message)
     store = get_store()
 
@@ -191,8 +224,38 @@ async def handle_device_event(hub_id: str, message: dict):
         port_id=event.portId,
         device_info=event.deviceInfo,
     )
+    
+    # Update connection status if it's a connection event
+    if event.eventType == "connected" and event.deviceInfo:
+        # Extract connection info from device_info
+        baud_rate = event.deviceInfo.get("baud_rate", 115200)
+        session_id = event.deviceInfo.get("session_id", "")
+        
+        await store.update_connection(
+            hub_id=hub_id,
+            port_id=event.portId,
+            status="connected",
+            baud_rate=baud_rate,
+            session_id=session_id,
+            bytes_read=0,
+            bytes_written=0,
+        )
+    elif event.eventType == "disconnected":
+        await store.remove_connection(hub_id, event.portId)
 
     logger.info(f"Device event from {hub_id}: {event.eventType} - {event.portId}")
+    
+    # Broadcast to subscribed clients
+    client_message = {
+        "type": "device_event",
+        "hubId": hub_id,
+        "portId": event.portId,
+        "timestamp": event.timestamp,
+        "event": event.eventType,
+    }
+    
+    client_manager = get_client_manager()
+    await client_manager.broadcast_device_event(hub_id, event.portId, client_message)
 
 
 async def handle_task_status(hub_id: str, message: dict):

@@ -1,5 +1,6 @@
 """Authentication API endpoints."""
 
+import logging
 from datetime import timedelta
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -8,6 +9,8 @@ from ..models import TokenResponse, UserInfo
 from ..auth.auth_service import authenticate_user, create_access_token
 from ..auth.dependencies import get_current_user
 from ..config import get_settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -23,13 +26,21 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     - Username: admin
     - Password: admin123
     """
+    logger.info(f"[LOGIN] Received login request for username: {form_data.username}")
+    logger.info(f"[LOGIN] Password length: {len(form_data.password)}")
+    logger.info(f"[LOGIN] Password first 3 chars: {form_data.password[:3]}...")
+    
     user = authenticate_user(form_data.username, form_data.password)
+    
     if not user:
+        logger.error(f"[LOGIN] Authentication failed for username: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    logger.info(f"[LOGIN] Authentication successful for username: {form_data.username}")
 
     settings = get_settings()
     access_token_expires = timedelta(minutes=settings.jwt_access_token_expire_minutes)

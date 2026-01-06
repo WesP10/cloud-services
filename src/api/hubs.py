@@ -11,6 +11,10 @@ from ..models import (
     HubInfo,
     TelemetryListResponse,
     TelemetryEntry,
+    PortListResponse,
+    PortInfo,
+    ConnectionListResponse,
+    ConnectionInfo,
     SerialWriteRequest,
     FlashFirmwareRequest,
     RestartDeviceRequest,
@@ -100,6 +104,80 @@ async def get_telemetry(
         telemetry=entries,
         count=stats["count"],
         totalBytes=stats["total_bytes"],
+    )
+
+
+@router.get("/{hub_id}/ports", response_model=PortListResponse)
+async def get_ports(
+    hub_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Get ports for hub.
+    """
+    store = get_store()
+
+    # Check if hub exists
+    if not await store.is_hub_connected(hub_id):
+        raise HTTPException(status_code=404, detail=f"Hub not found: {hub_id}")
+
+    # Get ports
+    ports_data = await store.get_ports(hub_id)
+
+    ports = [
+        PortInfo(
+            port_id=port.port_id,
+            port=port.port,
+            description=port.description,
+            manufacturer=port.manufacturer,
+            serial_number=port.serial_number,
+            vendor_id=port.vendor_id,
+            product_id=port.product_id,
+        )
+        for port in ports_data
+    ]
+
+    return PortListResponse(
+        hubId=hub_id,
+        ports=ports,
+        count=len(ports),
+    )
+
+
+@router.get("/{hub_id}/connections", response_model=ConnectionListResponse)
+async def get_connections(
+    hub_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Get connections for hub.
+    """
+    store = get_store()
+
+    # Check if hub exists
+    if not await store.is_hub_connected(hub_id):
+        raise HTTPException(status_code=404, detail=f"Hub not found: {hub_id}")
+
+    # Get connections
+    connections_data = await store.get_connections(hub_id)
+
+    connections = [
+        ConnectionInfo(
+            port_id=conn.port_id,
+            status=conn.status,
+            baud_rate=conn.baud_rate,
+            session_id=conn.session_id,
+            bytes_read=conn.bytes_read,
+            bytes_written=conn.bytes_written,
+            connected_at=conn.connected_at,
+        )
+        for conn in connections_data
+    ]
+
+    return ConnectionListResponse(
+        hubId=hub_id,
+        connections=connections,
+        count=len(connections),
     )
 
 

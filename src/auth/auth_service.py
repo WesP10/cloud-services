@@ -19,23 +19,37 @@ MOCK_USERS = {
         "username": "admin",
         "email": "admin@example.com",
         "full_name": "Admin User",
-        "hashed_password": "$2b$12$OKjf2RrEEYZ85U3PMwest.7H/J9w2PTYgDmp7.r2G6xOeOHKVRaWq",  # admin123
+        "hashed_password": "$2b$12$Bsq66/d3TpJAm88m7pUDjOKt9d.zDWL//Ndo.M75MB8U.HUnf28Ue",  # admin123
     },
     "developer": {
         "username": "developer",
         "email": "dev@example.com",
         "full_name": "Developer User",
-        "hashed_password": "$2b$12$JBLIC5HL.OsG6FKfHIM1Vex/szNO9EREkdHJoogsolueW8SqkXWG2",  # dev123
+        "hashed_password": "$2b$12$3zeCNtJ3l7jPngfCu0ehsOEpr0.0nk2eInMVIXZNfVA5YVmRG5xG.",  # dev123
     },
 }
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify password against hash."""
+    logger.info(f"[VERIFY] Verifying password")
+    logger.info(f"[VERIFY] Plain password: '{plain_password}'")
+    logger.info(f"[VERIFY] Plain password length: {len(plain_password)}")
+    
     # Truncate password to 72 bytes to comply with bcrypt limitations
     password_bytes = plain_password.encode('utf-8')[:72]
     hashed_bytes = hashed_password.encode('utf-8')
-    return bcrypt.checkpw(password_bytes, hashed_bytes)
+    
+    logger.info(f"[VERIFY] Password bytes length: {len(password_bytes)}")
+    logger.info(f"[VERIFY] Hash bytes length: {len(hashed_bytes)}")
+    
+    try:
+        result = bcrypt.checkpw(password_bytes, hashed_bytes)
+        logger.info(f"[VERIFY] Verification result: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"[VERIFY] Verification error: {e}")
+        return False
 
 
 def get_user(username: str) -> Optional[dict]:
@@ -45,11 +59,24 @@ def get_user(username: str) -> Optional[dict]:
 
 def authenticate_user(username: str, password: str) -> Optional[dict]:
     """Authenticate user with username and password."""
+    logger.info(f"[AUTH] Authenticating user: {username}")
+    logger.info(f"[AUTH] Password received: '{password}'")
+    logger.info(f"[AUTH] Password length: {len(password)}")
+    
     user = get_user(username)
     if not user:
+        logger.error(f"[AUTH] User not found: {username}")
+        logger.info(f"[AUTH] Available users: {list(MOCK_USERS.keys())}")
         return None
+    
+    logger.info(f"[AUTH] User found: {username}")
+    logger.info(f"[AUTH] Stored hash: {user['hashed_password'][:20]}...")
+    
     if not verify_password(password, user["hashed_password"]):
+        logger.error(f"[AUTH] Password verification failed for user: {username}")
         return None
+    
+    logger.info(f"[AUTH] Password verified successfully for user: {username}")
     return user
 
 
