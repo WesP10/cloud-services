@@ -25,6 +25,6 @@ try:
 except Exception as e:
     print(f"  Error: {e}")
 
-print("\nGenerating new valid hashes:")
-print(f"admin123: {bcrypt.hashpw(b'admin123', bcrypt.gensalt()).decode('utf-8')}")
-print(f"dev123: {bcrypt.hashpw(b'dev123', bcrypt.gensalt()).decode('utf-8')}")
+print("\nGenerating new valid hashes (no plaintext shown):")
+print(f"admin hash: {bcrypt.hashpw(b'admin123', bcrypt.gensalt()).decode('utf-8')}")
+print(f"developer hash: {bcrypt.hashpw(b'dev123', bcrypt.gensalt()).decode('utf-8')}")

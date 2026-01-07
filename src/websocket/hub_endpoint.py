@@ -161,6 +161,45 @@ async def handle_telemetry(hub_id: str, message: dict):
     )
 
     logger.debug(f"Telemetry from {hub_id}: {len(data_bytes)} bytes")
+
+    # Ensure a connection record exists (mark as connected) and update bytes read
+    try:
+        existing_conn = await store.get_connection(hub_id, telemetry.portId)
+        if existing_conn:
+            # Update bytes_read and session_id if needed
+            new_bytes_read = existing_conn.bytes_read + len(data_bytes)
+            baud_rate = existing_conn.baud_rate or 0
+            # Preserve connected_at
+            await store.update_connection(
+                hub_id=hub_id,
+                port_id=telemetry.portId,
+                status="connected",
+                baud_rate=baud_rate,
+                session_id=telemetry.sessionId or existing_conn.session_id,
+                bytes_read=new_bytes_read,
+                bytes_written=existing_conn.bytes_written,
+                connected_at=existing_conn.connected_at,
+            )
+        else:
+            # Create a minimal connection record based on telemetry
+            await store.update_connection(
+                hub_id=hub_id,
+                port_id=telemetry.portId,
+                status="connected",
+                baud_rate=0,
+                session_id=telemetry.sessionId,
+                bytes_read=len(data_bytes),
+                bytes_written=0,
+            )
+            # Also create a basic port record so port shows up in port lists
+            await store.add_device_event(
+                hub_id=hub_id,
+                event_type="connected",
+                port_id=telemetry.portId,
+                device_info={"port": telemetry.portId},
+            )
+    except Exception as e:
+        logger.error(f"Error updating connection from telemetry: {e}", exc_info=True)
     
     # Broadcast to subscribed clients
     client_message = {

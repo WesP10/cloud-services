@@ -77,5 +77,5 @@ API documentation at `http://localhost:8080/docs`
 
 ## Mock Users
 
-- Username: `admin`, Password: `admin123`
-- Username: `developer`, Password: `dev123`
+- Username: `admin`, Password: `<your password>`
+- Username: `developer`, Password: `<your password>`

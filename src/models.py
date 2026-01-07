@@ -89,7 +89,7 @@ class CommandEnvelope(BaseModel):
 class Command(BaseModel):
     """Command details."""
     commandId: str
-    commandType: str  # serial_write, flash, restart
+    commandType: str  # serial_write, flash, restart, close_connection
     portId: str
     params: Dict[str, Any]
     priority: int = 5
@@ -133,6 +133,12 @@ class RestartDeviceRequest(BaseModel):
     """Request to send restart device command."""
     portId: str = Field(..., description="Target port ID")
     priority: int = Field(2, ge=1, le=10, description="Command priority")
+
+
+class CloseConnectionRequest(BaseModel):
+    """Request to close a connection."""
+    portId: str = Field(..., description="Target port ID")
+    priority: int = Field(1, ge=1, le=10, description="Command priority")
 
 
 class CommandResponse(BaseModel):

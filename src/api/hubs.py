@@ -18,6 +18,7 @@ from ..models import (
     SerialWriteRequest,
     FlashFirmwareRequest,
     RestartDeviceRequest,
+    CloseConnectionRequest,
     CommandResponse,
 )
 from ..auth.dependencies import get_current_user
@@ -313,4 +314,47 @@ async def send_restart_device_command(
         hubId=hub_id,
         status="sent",
         message="Restart command sent to hub",
+    )
+
+
+@router.post("/{hub_id}/commands/close", response_model=CommandResponse)
+async def send_close_connection_command(
+    hub_id: str,
+    request: CloseConnectionRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Send close connection command to hub.
+    """
+    store = get_store()
+
+    # Check if hub is connected
+    if not await store.is_hub_connected(hub_id):
+        raise HTTPException(status_code=404, detail=f"Hub not connected: {hub_id}")
+
+    # Generate command ID
+    command_id = f"cmd-{uuid.uuid4()}"
+
+    # Prepare command
+    command = {
+        "commandId": command_id,
+        "commandType": "close_connection",
+        "portId": request.portId,
+        "params": {},
+        "priority": request.priority,
+    }
+
+    # Send command
+    success = await send_command_to_hub(hub_id, command)
+
+    if not success:
+        raise HTTPException(
+            status_code=500, detail="Failed to send command to hub"
+        )
+
+    return CommandResponse(
+        commandId=command_id,
+        hubId=hub_id,
+        status="sent",
+        message="Close connection command sent to hub",
     )

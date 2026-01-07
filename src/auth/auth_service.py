@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 # Mock user database with pre-hashed passwords
-# admin123 and dev123 hashed with bcrypt
+# Original plaintext removed for security
 MOCK_USERS = {
     "admin": {
         "username": "admin",
@@ -32,20 +32,15 @@ MOCK_USERS = {
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify password against hash."""
-    logger.info(f"[VERIFY] Verifying password")
-    logger.info(f"[VERIFY] Plain password: '{plain_password}'")
-    logger.info(f"[VERIFY] Plain password length: {len(plain_password)}")
+    logger.debug("[VERIFY] Verifying password")
     
     # Truncate password to 72 bytes to comply with bcrypt limitations
     password_bytes = plain_password.encode('utf-8')[:72]
     hashed_bytes = hashed_password.encode('utf-8')
     
-    logger.info(f"[VERIFY] Password bytes length: {len(password_bytes)}")
-    logger.info(f"[VERIFY] Hash bytes length: {len(hashed_bytes)}")
-    
     try:
         result = bcrypt.checkpw(password_bytes, hashed_bytes)
-        logger.info(f"[VERIFY] Verification result: {result}")
+        logger.info(f"[VERIFY] Verification {'success' if result else 'failure'}")
         return result
     except Exception as e:
         logger.error(f"[VERIFY] Verification error: {e}")
@@ -60,8 +55,6 @@ def get_user(username: str) -> Optional[dict]:
 def authenticate_user(username: str, password: str) -> Optional[dict]:
     """Authenticate user with username and password."""
     logger.info(f"[AUTH] Authenticating user: {username}")
-    logger.info(f"[AUTH] Password received: '{password}'")
-    logger.info(f"[AUTH] Password length: {len(password)}")
     
     user = get_user(username)
     if not user:
@@ -70,7 +63,7 @@ def authenticate_user(username: str, password: str) -> Optional[dict]:
         return None
     
     logger.info(f"[AUTH] User found: {username}")
-    logger.info(f"[AUTH] Stored hash: {user['hashed_password'][:20]}...")
+    logger.debug("[AUTH] Stored password hash present")
     
     if not verify_password(password, user["hashed_password"]):
         logger.error(f"[AUTH] Password verification failed for user: {username}")

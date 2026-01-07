@@ -24,11 +24,9 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     
     Use the 'Authorize' button in Swagger UI to test:
     - Username: admin
-    - Password: admin123
+    - Password: <your password>
     """
     logger.info(f"[LOGIN] Received login request for username: {form_data.username}")
-    logger.info(f"[LOGIN] Password length: {len(form_data.password)}")
-    logger.info(f"[LOGIN] Password first 3 chars: {form_data.password[:3]}...")
     
     user = authenticate_user(form_data.username, form_data.password)
     
