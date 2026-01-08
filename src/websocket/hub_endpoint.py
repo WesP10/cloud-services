@@ -1,3 +1,4 @@
+from .client_endpoint import client_manager, get_client_manager
 """WebSocket endpoint for hub connections."""
 
 import json
@@ -308,3 +309,18 @@ async def handle_task_status(hub_id: str, message: dict):
     logger.info(
         f"Task status from {hub_id}: {task_status.taskId} - {task_status.status}"
     )
+
+    # Broadcast to all connected clients
+    client_manager = get_client_manager()
+    client_message = {
+        "type": "task_status",
+        "hubId": hub_id,
+        "task_id": task_status.taskId,
+        "status": task_status.status,
+        "progress": task_status.progress,
+        "result": task_status.result,
+        "error": task_status.error,
+        "timestamp": task_status.timestamp,
+    }
+
+    await client_manager.broadcast_task_status(hub_id, client_message)

@@ -100,6 +100,20 @@ class ClientManager:
         for connection_id in disconnected:
             self.remove_client(connection_id)
 
+    async def broadcast_task_status(self, hub_id: str, message: dict) -> None:
+        """Broadcast task status updates to all clients (no subscription filter)."""
+        disconnected = []
+
+        for connection_id, client in self.clients.items():
+            try:
+                await client.websocket.send_text(json.dumps(message))
+            except Exception as e:
+                logger.error(f"Error sending task status to client {connection_id}: {e}")
+                disconnected.append(connection_id)
+
+        for connection_id in disconnected:
+            self.remove_client(connection_id)
+
 
 # Global client manager instance
 client_manager = ClientManager()

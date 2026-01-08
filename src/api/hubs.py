@@ -20,6 +20,7 @@ from ..models import (
     RestartDeviceRequest,
     CloseConnectionRequest,
     CommandResponse,
+    TaskStatusResponse,
 )
 from ..auth.dependencies import get_current_user
 from ..storage.memory_store import get_store
@@ -182,7 +183,7 @@ async def get_connections(
     )
 
 
-@router.post("/{hub_id}/commands/write", response_model=CommandResponse)
+@router.post("/{hub_id}/commands/write", response_model=TaskStatusResponse)
 async def send_serial_write_command(
     hub_id: str,
     request: SerialWriteRequest,
@@ -220,15 +221,17 @@ async def send_serial_write_command(
             status_code=500, detail="Failed to send command to hub"
         )
 
-    return CommandResponse(
-        commandId=command_id,
-        hubId=hub_id,
-        status="sent",
-        message="Command sent to hub",
+    return TaskStatusResponse(
+        task_id=command_id,
+        status="pending",
+        progress=None,
+        result=None,
+        error=None,
+        timestamp=datetime.utcnow(),
     )
 
 
-@router.post("/{hub_id}/commands/flash", response_model=CommandResponse)
+@router.post("/{hub_id}/commands/flash", response_model=TaskStatusResponse)
 async def send_flash_firmware_command(
     hub_id: str,
     request: FlashFirmwareRequest,
@@ -266,15 +269,17 @@ async def send_flash_firmware_command(
             status_code=500, detail="Failed to send command to hub"
         )
 
-    return CommandResponse(
-        commandId=command_id,
-        hubId=hub_id,
-        status="sent",
-        message="Flash command sent to hub",
+    return TaskStatusResponse(
+        task_id=command_id,
+        status="pending",
+        progress=None,
+        result=None,
+        error=None,
+        timestamp=datetime.utcnow(),
     )
 
 
-@router.post("/{hub_id}/commands/restart", response_model=CommandResponse)
+@router.post("/{hub_id}/commands/restart", response_model=TaskStatusResponse)
 async def send_restart_device_command(
     hub_id: str,
     request: RestartDeviceRequest,
@@ -309,15 +314,17 @@ async def send_restart_device_command(
             status_code=500, detail="Failed to send command to hub"
         )
 
-    return CommandResponse(
-        commandId=command_id,
-        hubId=hub_id,
-        status="sent",
-        message="Restart command sent to hub",
+    return TaskStatusResponse(
+        task_id=command_id,
+        status="pending",
+        progress=None,
+        result=None,
+        error=None,
+        timestamp=datetime.utcnow(),
     )
 
 
-@router.post("/{hub_id}/commands/close", response_model=CommandResponse)
+@router.post("/{hub_id}/commands/close", response_model=TaskStatusResponse)
 async def send_close_connection_command(
     hub_id: str,
     request: CloseConnectionRequest,
@@ -352,9 +359,11 @@ async def send_close_connection_command(
             status_code=500, detail="Failed to send command to hub"
         )
 
-    return CommandResponse(
-        commandId=command_id,
-        hubId=hub_id,
-        status="sent",
-        message="Close connection command sent to hub",
-    )
+        return TaskStatusResponse(
+            task_id=command_id,
+            status="pending",
+            progress=None,
+            result=None,
+            error=None,
+            timestamp=datetime.utcnow(),
+        )
