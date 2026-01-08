@@ -255,6 +255,10 @@ class MemoryStore:
                     product_id=device_info.get("product_id"),
                 )
                 self._ports[hub_id][port_id] = port_data
+            
+            # Remove from ports cache when device disconnects
+            elif event_type == "disconnected":
+                self._ports[hub_id].pop(port_id, None)
 
     async def get_device_events(
         self, hub_id: str, limit: Optional[int] = None

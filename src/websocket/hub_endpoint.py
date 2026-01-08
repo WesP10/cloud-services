@@ -182,6 +182,7 @@ async def handle_telemetry(hub_id: str, message: dict):
             )
         else:
             # Create a minimal connection record based on telemetry
+            # Note: Port will only appear in port list after proper device_event with full metadata
             await store.update_connection(
                 hub_id=hub_id,
                 port_id=telemetry.portId,
@@ -190,13 +191,6 @@ async def handle_telemetry(hub_id: str, message: dict):
                 session_id=telemetry.sessionId,
                 bytes_read=len(data_bytes),
                 bytes_written=0,
-            )
-            # Also create a basic port record so port shows up in port lists
-            await store.add_device_event(
-                hub_id=hub_id,
-                event_type="connected",
-                port_id=telemetry.portId,
-                device_info={"port": telemetry.portId},
             )
     except Exception as e:
         logger.error(f"Error updating connection from telemetry: {e}", exc_info=True)
