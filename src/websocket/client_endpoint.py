@@ -1,5 +1,6 @@
 """WebSocket endpoint for client (browser) connections."""
 
+import asyncio
 import json
 import logging
 from datetime import datetime
@@ -118,6 +119,35 @@ class ClientManager:
 # Global client manager instance
 client_manager = ClientManager()
 
+# Keepalive ping interval (30 seconds)
+PING_INTERVAL = 30
+
+
+async def send_periodic_pings(websocket: WebSocket, username: str):
+    """
+    Send periodic ping messages to keep the connection alive.
+    
+    Args:
+        websocket: WebSocket connection
+        username: Username for logging
+    """
+    try:
+        while True:
+            await asyncio.sleep(PING_INTERVAL)
+            try:
+                ping_message = {
+                    "type": "ping",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+                await websocket.send_text(json.dumps(ping_message))
+                logger.debug(f"Sent ping to client {username}")
+            except Exception as e:
+                logger.warning(f"Failed to send ping to {username}: {e}")
+                break
+    except asyncio.CancelledError:
+        logger.debug(f"Ping task cancelled for {username}")
+        raise
+
 
 async def handle_client_connection(websocket: WebSocket, token: str = Query(...)):
     """
@@ -152,6 +182,9 @@ async def handle_client_connection(websocket: WebSocket, token: str = Query(...)
     # Register client connection
     connection_id = client_manager.add_client(websocket, username)
     
+    # Start periodic ping task
+    ping_task = asyncio.create_task(send_periodic_pings(websocket, username))
+    
     try:
         # Send welcome message
         welcome = {
@@ -166,8 +199,12 @@ async def handle_client_connection(websocket: WebSocket, token: str = Query(...)
             message_data = await websocket.receive_text()
             message_dict = json.loads(message_data)
             
-            # Route message
-            await route_client_message(connection_id, message_dict)
+            # Route message (ignore pong responses from client)
+            message_type = message_dict.get("type")
+            if message_type == "pong":
+                logger.debug(f"Received pong from client {username}")
+            else:
+                await route_client_message(connection_id, message_dict)
     
     except WebSocketDisconnect:
         logger.info(f"Client disconnected: {username}")
@@ -176,6 +213,13 @@ async def handle_client_connection(websocket: WebSocket, token: str = Query(...)
         logger.error(f"Error in client connection: {e}", exc_info=True)
     
     finally:
+        # Cancel ping task
+        ping_task.cancel()
+        try:
+            await ping_task
+        except asyncio.CancelledError:
+            pass
+        
         # Cleanup
         client_manager.remove_client(connection_id)
         logger.info(f"Client connection cleaned up: {username}")
