@@ -103,7 +103,7 @@ class SerialWriteParams(BaseModel):
 
 class FlashParams(BaseModel):
     """Parameters for flash command."""
-    firmwareData: str  # Base64 encoded
+    firmwareData: str  # Base64 encoded .ino source or .hex binary
     boardFqbn: Optional[str] = None
 
 
@@ -124,8 +124,8 @@ class SerialWriteRequest(BaseModel):
 class FlashFirmwareRequest(BaseModel):
     """Request to send flash firmware command."""
     portId: str = Field(..., description="Target port ID")
-    firmwareData: str = Field(..., description="Base64 encoded firmware")
-    boardFqbn: Optional[str] = Field(None, description="Board FQBN")
+    firmwareData: str = Field(..., description="Base64 encoded .ino source or .hex binary")
+    boardFqbn: Optional[str] = Field(None, description="Board FQBN (required for .ino source)")
     priority: int = Field(3, ge=1, le=10, description="Command priority")
 
 
