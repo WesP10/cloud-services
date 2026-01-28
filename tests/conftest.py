@@ -6,11 +6,13 @@ from unittest.mock import MagicMock, patch
 import sys
 from pathlib import Path
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+# Ensure package imports work by adding project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from main import app
-from config import get_settings
+# Import the app as package module to allow relative imports inside src
+from importlib import import_module
+main = import_module('src.main')
+app = main.app
 
 
 @pytest.fixture
@@ -22,7 +24,7 @@ def client():
 @pytest.fixture
 def mock_settings():
     """Create mock settings for tests."""
-    with patch('config.get_settings') as mock:
+    with patch('src.config.get_settings') as mock:
         settings = MagicMock()
         settings.SECRET_KEY = "test-secret-key-for-testing-only"
         settings.ALGORITHM = "HS256"

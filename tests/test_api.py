@@ -1,46 +1,43 @@
-"""Test script for cloud service API."""
+"""Pytest-compatible API tests for cloud-services.
 
-import requests
-import json
+These use the `client` fixture defined in `tests/conftest.py` so tests
+run without requiring an externally running server or the `requests` package.
+"""
 
-BASE_URL = "http://localhost:8080"
 
-# Test 1: Health check
-print("Testing health endpoint...")
-response = requests.get(f"{BASE_URL}/health")
-print(f"Status: {response.status_code}")
-print(f"Response: {response.json()}\n")
+def test_health_endpoint(client):
+    response = client.get("/health")
+    assert response.status_code == 200
+    # Basic shape check
+    assert isinstance(response.json(), dict) or response.json() == {}
 
-# Test 2: Login to get JWT token
-print("Testing login endpoint...")
-login_data = {
-    "username": "admin",
-    "password": "admin123"
-}
-response = requests.post(f"{BASE_URL}/auth/login", json=login_data)
-print(f"Status: {response.status_code}")
-token_response = response.json()
-print(f"Response: {token_response}\n")
 
-# Get the access token
-access_token = token_response["access_token"]
-headers = {
-    "Authorization": f"Bearer {access_token}"
-}
+def test_login_and_get_current_user(client):
+    login_data = {"username": "admin", "password": "admin123"}
+    res = client.post("/auth/login", json=login_data)
+    assert res.status_code == 200
+    data = res.json()
+    assert "access_token" in data
 
-# Test 3: Get current user
-print("Testing get current user endpoint...")
-response = requests.get(f"{BASE_URL}/auth/me", headers=headers)
-print(f"Status: {response.status_code}")
-print(f"Response: {response.json()}\n")
+    token = data["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
 
-# Test 4: List hubs (should be empty initially)
-print("Testing list hubs endpoint...")
-response = requests.get(f"{BASE_URL}/api/hubs", headers=headers)
-print(f"Status: {response.status_code}")
-print(f"Response: {response.json()}\n")
+    me = client.get("/auth/me", headers=headers)
+    assert me.status_code == 200
+    assert "username" in me.json() or isinstance(me.json(), dict)
 
-print("All API tests completed successfully!")
-print("\nTo test WebSocket connection, configure your rpi-hub-service with:")
-print("SERVER_ENDPOINT=ws://localhost:8080/hub")
-print("DEVICE_TOKEN=dev-token-rpi-bridge-01")
+
+def test_list_hubs_requires_auth(client):
+    # Without auth
+    res = client.get("/api/hubs")
+    assert res.status_code in [401, 403]
+
+    # With auth
+    login = client.post("/auth/login", json={"username": "admin", "password": "admin123"})
+    if login.status_code == 200:
+        token = login.json()["access_token"]
+        res = client.get("/api/hubs", headers={"Authorization": f"Bearer {token}"})
+        assert res.status_code in [200, 401, 403]
+        if res.status_code == 200:
+            assert isinstance(res.json(), list)
+

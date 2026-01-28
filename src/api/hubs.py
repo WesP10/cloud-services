@@ -3,7 +3,7 @@
 import uuid
 import base64
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Depends, Query
 
 from ..models import (
@@ -29,10 +29,10 @@ from ..services.command_service import send_command_to_hub
 router = APIRouter(prefix="/api/hubs", tags=["hubs"])
 
 
-@router.get("", response_model=HubListResponse)
+@router.get("", response_model=List[HubInfo])
 async def list_hubs(current_user: dict = Depends(get_current_user)):
     """
-    List all connected hubs.
+    List all connected hubs (returns a list of HubInfo).
     """
     store = get_store()
     hubs = await store.get_all_hubs()
@@ -48,7 +48,7 @@ async def list_hubs(current_user: dict = Depends(get_current_user)):
         for hub in hubs
     ]
 
-    return HubListResponse(hubs=hub_infos, count=len(hub_infos))
+    return hub_infos
 
 
 @router.get("/{hub_id}", response_model=HubInfo)
