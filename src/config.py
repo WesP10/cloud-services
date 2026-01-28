@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     device_token_rpi_bridge_02: str = "dev-token-rpi-bridge-02"
 
     # CORS - can be string or list
-    cors_origins: Union[str, List[str]] = "http://localhost:3000,http://localhost:5173,http://localhost:8080,https://gui.cornellhyperloop.com"
+    cors_origins: Union[str, List[str]] = "http://localhost:3000,http://localhost:4173,http://localhost:5173,http://localhost:8080,https://gui.cornellhyperloop.com"
 
     @field_validator('cors_origins', mode='after')
     @classmethod
