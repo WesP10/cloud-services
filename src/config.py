@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 60
 
+    # Users
+    users_file_path: str = "/home/ubuntu/users.json"
+    
     # Device Tokens
     device_token_rpi_bridge_01: str = "dev-token-rpi-bridge-01"
     device_token_rpi_bridge_02: str = "dev-token-rpi-bridge-02"
