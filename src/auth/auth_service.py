@@ -22,12 +22,14 @@ DEMO_USERS = {
         "email": "admin@example.com",
         "full_name": "Admin User",
         "hashed_password": "$2b$12$Bsq66/d3TpJAm88m7pUDjOKt9d.zDWL//Ndo.M75MB8U.HUnf28Ue",  # admin123
+        "role": "admin",
     },
     "developer": {
         "username": "developer",
         "email": "dev@example.com",
         "full_name": "Developer User",
         "hashed_password": "$2b$12$3zeCNtJ3l7jPngfCu0ehsOEpr0.0nk2eInMVIXZNfVA5YVmRG5xG.",  # dev123
+        "role": "admin",
     },
 }
 
@@ -128,6 +130,29 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     encoded_jwt = jwt.encode(
         to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm
     )
+    return encoded_jwt
+
+
+def create_viewer_access_token(expires_delta: Optional[timedelta] = None) -> str:
+    """Create JWT access token for view-only mode."""
+    settings = get_settings()
+    to_encode = {
+        "sub": "Viewer",
+        "role": "viewer",
+    }
+
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(
+            minutes=settings.jwt_access_token_expire_minutes
+        )
+
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(
+        to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm
+    )
+    logger.info("[AUTH] Created viewer access token")
     return encoded_jwt
 
 
