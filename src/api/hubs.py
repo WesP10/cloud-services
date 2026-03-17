@@ -240,6 +240,13 @@ async def send_flash_firmware_command(
     """
     Send flash firmware command to hub.
     """
+    # Check if user has permission to flash (viewer mode is read-only)
+    if current_user.get("role") == "viewer":
+        raise HTTPException(
+            status_code=403,
+            detail="Permission denied. View-only mode does not allow flashing firmware.",
+        )
+
     store = get_store()
 
     # Check if hub is connected

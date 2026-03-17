@@ -23,12 +23,15 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
 
     user = get_user(username)
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
+        # If user not found but role is in JWT (viewer mode), create user object from JWT
+        role = payload.get("role", "admin")
+        user = {
+            "username": username,
+            "email": None,
+            "full_name": None,
+            "role": role,
+        }
+    
     return user
 
 

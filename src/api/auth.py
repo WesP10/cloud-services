@@ -5,7 +5,7 @@ from datetime import timedelta
 from fastapi import APIRouter, HTTPException, Depends, status, Request
 
 from ..models import TokenResponse, UserInfo
-from ..auth.auth_service import authenticate_user, create_access_token
+from ..auth.auth_service import authenticate_user, create_access_token, create_viewer_access_token
 from ..auth.dependencies import get_current_user
 from ..config import get_settings
 
@@ -61,9 +61,30 @@ async def login(request: Request):
     settings = get_settings()
     access_token_expires = timedelta(minutes=settings.jwt_access_token_expire_minutes)
     access_token = create_access_token(
-        data={"sub": user["username"]}, expires_delta=access_token_expires
+        data={
+            "sub": user["username"],
+            "role": user.get("role", "admin"),
+        },
+        expires_delta=access_token_expires,
     )
 
+    return TokenResponse(access_token=access_token, token_type="bearer")
+
+
+@router.post("/login-viewer", response_model=TokenResponse)
+async def login_viewer():
+    """
+    Enable view-only mode without credentials.
+
+    Returns JWT access token with viewer role.
+    """
+    logger.info("[LOGIN-VIEWER] Viewer access requested")
+
+    settings = get_settings()
+    access_token_expires = timedelta(minutes=settings.jwt_access_token_expire_minutes)
+    access_token = create_viewer_access_token(expires_delta=access_token_expires)
+
+    logger.info("[LOGIN-VIEWER] Viewer token created successfully")
     return TokenResponse(access_token=access_token, token_type="bearer")
 
 
@@ -76,4 +97,5 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         username=current_user["username"],
         email=current_user.get("email"),
         full_name=current_user.get("full_name"),
+        role=current_user.get("role", "admin"),
     )
