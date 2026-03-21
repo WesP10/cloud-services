@@ -23,6 +23,7 @@ class UserInfo(BaseModel):
     username: str
     email: Optional[str] = None
     full_name: Optional[str] = None
+    role: Optional[str] = None
 
 
 # Hub Connection Models

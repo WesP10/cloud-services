@@ -67,6 +67,28 @@ async def login(request: Request):
     return TokenResponse(access_token=access_token, token_type="bearer")
 
 
+@router.post("/login-viewer", response_model=TokenResponse)
+async def login_viewer():
+    """
+    Login as a viewer with read-only access.
+    
+    Returns JWT access token with viewer role.
+    """
+    logger.info("[LOGIN] Viewer login requested")
+
+    settings = get_settings()
+    access_token_expires = timedelta(minutes=settings.jwt_access_token_expire_minutes)
+    
+    # Create token with viewer role embedded in payload
+    access_token = create_access_token(
+        data={"sub": "viewer", "role": "viewer"}, 
+        expires_delta=access_token_expires
+    )
+
+    logger.info("[LOGIN] Viewer token created successfully")
+    return TokenResponse(access_token=access_token, token_type="bearer")
+
+
 @router.get("/me", response_model=UserInfo)
 async def get_me(current_user: dict = Depends(get_current_user)):
     """
@@ -76,4 +98,5 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         username=current_user["username"],
         email=current_user.get("email"),
         full_name=current_user.get("full_name"),
+        role=current_user.get("role"),
     )

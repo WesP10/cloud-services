@@ -21,6 +21,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Handle viewer role
+    role = payload.get("role")
+    if username == "viewer" and role == "viewer":
+        return {
+            "username": "viewer",
+            "email": None,
+            "full_name": "View-Only User",
+            "role": "viewer"
+        }
+
     user = get_user(username)
     if user is None:
         raise HTTPException(
