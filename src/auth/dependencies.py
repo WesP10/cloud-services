@@ -55,6 +55,11 @@ async def get_current_user_ws(token: str) -> str:
         if username is None:
             return None
         
+        # Handle viewer role
+        role = payload.get("role")
+        if username == "viewer" and role == "viewer":
+            return username
+        
         user = get_user(username)
         if user is None:
             return None
