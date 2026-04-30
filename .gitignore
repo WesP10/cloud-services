@@ -26,7 +26,8 @@ ENV/
 env/
 
 # Environment
-.env
+.env.
+.env.production
 .env.local
 
 # IDE

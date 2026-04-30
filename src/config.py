@@ -1,5 +1,5 @@
 """Configuration management."""
-
+import os
 import logging
 from typing import List, Union
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     """Application settings."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=os.getenv("ENV_FILE", ".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",

@@ -57,11 +57,17 @@ def load_users() -> dict:
                 return _users_cache
         except Exception as e:
             logger.error(f"Error loading users from {users_file}: {e}")
+            if settings.environment == "production":
+                logger.error("Production mode: refusing to fall back to demo users")
+                raise RuntimeError("Cannot load users file in production")
             logger.warning("Falling back to demo users")
             _users_cache = DEMO_USERS
             return _users_cache
     else:
         logger.warning(f"Users file not found at {users_file}")
+        if settings.environment == "production":
+            logger.error("Production mode: demo users are disabled")
+            raise RuntimeError("Users file required in production")
         logger.warning("Using demo users (admin/developer)")
         _users_cache = DEMO_USERS
         return _users_cache
